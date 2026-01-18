@@ -1,0 +1,646 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Abzyrx - C / C++ IDE & Compiler</title>
+  <meta name="description"
+    content="Modern, lightweight C/C++ IDE powered by Wandbox. Write, compile, and run code directly in your browser." />
+  <style>
+    :root {
+      --bg-primary: #000000;
+      --bg-secondary: #000000;
+      --bg-card: rgba(17, 24, 39, 0.7);
+      --bg-glass: rgba(30, 41, 59, 0.5);
+      --text-primary: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
+      --accent: #6366f1;
+      --accent-hover: #818cf8;
+      --accent-glow: rgba(99, 102, 241, 0.3);
+      --success: #22c55e;
+      --border: rgba(148, 163, 184, 0.15);
+      --radius: 12px;
+      --radius-sm: 8px;
+      --shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      --transition: 0.2s ease;
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      height: 100%;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      line-height: 1.5;
+    }
+
+    /* Header */
+    header {
+      padding: 0.75rem 1.25rem;
+      background: var(--bg-glass);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .logo-img {
+      height: 32px;
+      width: auto;
+      border-radius: 6px;
+      object-fit: contain;
+    }
+
+    header h1 {
+      font-size: 1rem;
+      font-weight: 600;
+      background: linear-gradient(135deg, var(--text-primary), var(--accent-hover));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .controls {
+      margin-left: auto;
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .control-group label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    select {
+      appearance: none;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      padding: 0.5rem 2rem 0.5rem 0.75rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: all var(--transition);
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2394a3b8' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.75rem center;
+    }
+
+    select:hover,
+    select:focus {
+      border-color: var(--accent);
+      outline: none;
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    /* Main Layout */
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 1rem;
+      padding: 1rem;
+      min-height: 0;
+    }
+
+    /* Editor */
+    #editor {
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid var(--border);
+      min-height: 400px;
+      box-shadow: var(--shadow);
+    }
+
+    /* Sidebar */
+    .sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      min-height: 0;
+    }
+
+    .panel {
+      background: var(--bg-glass);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .panel-title {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.75px;
+      font-weight: 600;
+    }
+
+    /* Buttons */
+    .btn-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+    }
+
+    button {
+      font-family: inherit;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      padding: 0.625rem 1rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all var(--transition);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    button:hover {
+      background: var(--bg-card);
+      border-color: var(--text-muted);
+      transform: translateY(-1px);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), #7c3aed);
+      border: none;
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, var(--accent-hover), #8b5cf6);
+      box-shadow: 0 4px 20px var(--accent-glow);
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, var(--success), #16a34a);
+      border: none;
+      color: #fff;
+    }
+
+    .btn-success:hover {
+      box-shadow: 0 4px 20px rgba(34, 197, 94, 0.3);
+    }
+
+    /* Input */
+    .input-group {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    input[type="text"],
+    input:not([type]) {
+      flex: 1;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      padding: 0.625rem 0.875rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.875rem;
+      transition: all var(--transition);
+    }
+
+    input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    input::placeholder {
+      color: var(--text-muted);
+    }
+
+    /* Example Select Row */
+    .example-row {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .example-row select {
+      flex: 1;
+    }
+
+    /* Output Panel */
+    .output-panel {
+      flex: 1;
+      min-height: 200px;
+    }
+
+    #output {
+      flex: 1;
+      background: var(--bg-primary);
+      color: #a5f3fc;
+      font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, monospace;
+      font-size: 0.8125rem;
+      padding: 0.875rem;
+      border-radius: var(--radius-sm);
+      overflow: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      line-height: 1.6;
+      min-height: 180px;
+      max-height: 320px;
+      border: 1px solid var(--border);
+    }
+
+    /* Status indicator */
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--success);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.4;
+      }
+    }
+
+    /* Mobile Toggle */
+    #toggleOutput {
+      display: none;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.8rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      main {
+        grid-template-columns: 1fr;
+        grid-template-rows: minmax(280px, 1fr) auto;
+      }
+
+      .sidebar {
+        width: 100%;
+      }
+
+      .controls {
+        gap: 0.5rem;
+      }
+
+      header h1 {
+        font-size: 0.875rem;
+      }
+    }
+
+    @media (max-width: 600px) {
+      header {
+        padding: 0.625rem 0.75rem;
+      }
+
+      header h1 {
+        display: none;
+      }
+
+      .controls {
+        margin-left: 0;
+        width: 100%;
+        justify-content: flex-start;
+      }
+
+      .control-group label {
+        display: none;
+      }
+
+      main {
+        padding: 0.625rem;
+        gap: 0.625rem;
+      }
+
+      #editor {
+        min-height: 260px;
+      }
+
+      .panel {
+        padding: 0.75rem;
+        gap: 0.75rem;
+      }
+
+      .btn-group {
+        grid-template-columns: 1fr;
+      }
+
+      #output {
+        min-height: 120px;
+        max-height: 180px;
+        font-size: 0.75rem;
+      }
+
+      #toggleOutput {
+        display: inline-flex;
+      }
+
+      .output-panel.collapsed {
+        display: none;
+      }
+    }
+
+    /* Scrollbar styling */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--bg-primary);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--text-muted);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--text-secondary);
+    }
+
+    /* Loading state */
+    .loading {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="logo">
+      <img src="https://abzyrx.com/azx2.png" alt="Abzyrx Logo" class="logo-img" />
+      <h1>Abzyrx IDE</h1>
+    </div>
+    <button id="toggleOutput">☰ Console</button>
+    <div class="controls">
+      <div class="control-group">
+        <label>Lang</label>
+        <select id="lang" aria-label="Language">
+          <option value="c">C (C11)</option>
+          <option value="cpp" selected>C++ (C++17)</option>
+        </select>
+      </div>
+      <div class="control-group">
+        <label>Compiler</label>
+        <select id="compiler" aria-label="Compiler">
+          <option value="gcc-13.2.0">gcc 13.2</option>
+          <option value="clang-17.0.0">clang 17</option>
+          <option value="gcc-head">gcc-head</option>
+          <option value="clang-head">clang-head</option>
+        </select>
+      </div>
+      <span class="status"><span class="status-dot"></span> Online</span>
+    </div>
+  </header>
+
+  <main>
+    <div id="editor"></div>
+    <div class="sidebar">
+      <div class="panel">
+        <span class="panel-title">Actions</span>
+        <div class="btn-group">
+          <button id="run" class="btn-success">▶ Run</button>
+          <button id="compile" class="btn-primary">⚙ Compile</button>
+          <button id="clear">✕ Clear</button>
+          <button id="download">⬇ Save</button>
+        </div>
+        <div class="input-group">
+          <label class="panel-title" style="width:auto;">Stdin</label>
+          <input id="stdin" type="text" placeholder="Program input (optional)" />
+        </div>
+        <div class="example-row">
+          <select id="examples" aria-label="Examples">
+            <option value="hello_cpp">Hello C++</option>
+            <option value="hello_c">Hello C</option>
+            <option value="fibonacci_cpp">Fibonacci</option>
+          </select>
+          <button id="loadExample">Load</button>
+        </div>
+      </div>
+
+      <div class="panel output-panel">
+        <span class="panel-title">Output</span>
+        <pre id="output">Ready.</pre>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.14/ace.min.js"></script>
+  <script>
+    const editor = ace.edit('editor');
+    editor.setTheme('ace/theme/one_dark');
+    editor.session.setMode('ace/mode/c_cpp');
+    editor.setOptions({
+      fontSize: '14px',
+      showPrintMargin: false,
+      highlightActiveLine: true,
+      wrap: true
+    });
+    editor.setValue(`#include <bits/stdc++.h>
+using namespace std;
+
+int main() {
+    cout << "Hello, World!" << endl;
+    return 0;
+}
+`, -1);
+
+    const examples = {
+      hello_cpp: `#include <iostream>
+using namespace std;
+
+int main() {
+    cout << "Hello C++" << endl;
+    return 0;
+}
+`,
+      hello_c: `#include <stdio.h>
+
+int main() {
+    puts("Hello C");
+    return 0;
+}
+`,
+      fibonacci_cpp: `#include <iostream>
+using namespace std;
+
+int main() {
+    int n = 10;
+    long long a = 0, b = 1;
+    
+    for (int i = 0; i < n; i++) {
+        cout << a << " ";
+        long long temp = a + b;
+        a = b;
+        b = temp;
+    }
+    cout << endl;
+    return 0;
+}
+`
+    };
+
+    const $ = id => document.getElementById(id);
+    const setOutput = text => $('output').textContent = text;
+
+    $('loadExample').addEventListener('click', () => {
+      const key = $('examples').value;
+      editor.setValue(examples[key], -1);
+      if (key === 'hello_c') {
+        $('lang').value = 'c';
+        $('compiler').value = 'gcc-13.2.0';
+      } else {
+        $('lang').value = 'cpp';
+      }
+      setOutput('✓ Loaded: ' + key.replace('_', ' '));
+    });
+
+    $('clear').addEventListener('click', () => setOutput(''));
+
+    $('download').addEventListener('click', () => {
+      const code = editor.getValue();
+      const blob = new Blob([code], { type: 'text/plain' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = $('lang').value === 'c' ? 'main.c' : 'main.cpp';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    });
+
+    const compilerOption = lang => lang === 'c' ? '-std=c11' : '-std=c++17';
+
+    async function callWandbox(payload) {
+      const res = await fetch('https://wandbox.org/api/compile.json', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error('Network error: ' + res.status);
+      return res.json();
+    }
+
+    async function run(compileOnly = false) {
+      const lang = $('lang').value;
+      const compiler = $('compiler').value;
+      const stdin = $('stdin').value || '';
+      const code = editor.getValue();
+
+      setOutput('⏳ Compiling...');
+      $('run').classList.add('loading');
+      $('compile').classList.add('loading');
+
+      try {
+        const json = await callWandbox({
+          code,
+          compiler,
+          stdin,
+          'compiler-option-raw': compilerOption(lang),
+          'runtime-option-raw': ''
+        });
+
+        let out = '';
+        if (json.compiler_message) out += '⚠ Compiler:\n' + json.compiler_message + '\n';
+        if (!compileOnly) {
+          if (json.program_message) out += '📤 Output:\n' + json.program_message + '\n';
+          if (json.signal) out += `⚡ Signal: ${json.signal}\n`;
+          if (json.status !== undefined) out += `🏁 Exit: ${json.status}\n`;
+        }
+        if (json.url) out += '\n🔗 ' + json.url + '\n';
+        setOutput(out || '✓ Success (no output)');
+      } catch (err) {
+        setOutput('❌ Error: ' + err.message);
+      } finally {
+        $('run').classList.remove('loading');
+        $('compile').classList.remove('loading');
+      }
+    }
+
+    $('run').addEventListener('click', () => run(false));
+    $('compile').addEventListener('click', () => run(true));
+
+    $('lang').addEventListener('change', () => {
+      editor.session.setMode('ace/mode/c_cpp');
+    });
+
+    // Mobile output toggle
+    $('toggleOutput').addEventListener('click', () => {
+      const panel = $('output').closest('.output-panel');
+      panel.classList.toggle('collapsed');
+      setTimeout(() => editor.resize(), 100);
+    });
+
+    // Resize editor on window resize
+    window.addEventListener('resize', () => editor.resize());
+
+    // Initial resize
+    setTimeout(() => editor.resize(), 100);
+  </script>
+</body>
+
+</html>
+</CodeContent>
+<parameter name="EmptyFile">false
