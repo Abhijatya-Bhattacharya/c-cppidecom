@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Abzyrx - C / C++ IDE & Compiler</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css">
+    <style>
+      body { font-family: system-ui,Segoe UI,Roboto,Helvetica,Arial; margin: 0; height: 100vh; display: flex; flex-direction: column; }
+      header { padding: 10px 12px; background:#0f172a; color:#fff; display:flex; align-items:center; gap:8px; }
+      header h1 { font-size:16px; margin:0; }
+      .controls { margin-left:auto; display:flex; gap:8px; align-items:center; }
+      main { display:flex; flex:1; gap:8px; padding:8px; box-sizing:border-box; }
+      #editor { flex:1; height:100%; border:1px solid #ddd; min-height:360px; }
+      .sidebar { width:420px; display:flex; flex-direction:column; gap:8px; }
+      .panel { background:#fff; border:1px solid #ddd; padding:8px; display:flex; flex-direction:column; gap:8px; }
+      select, button, input { padding:8px 10px; font-size:14px; }
+      #output { background:#0b1220; color:#cbd5e1; font-family: monospace; padding:8px; height:320px; overflow:auto; white-space:pre-wrap; }
+      .small { font-size:12px; color:#666; }
+
+      /* Mobile / narrow layout */
+      @media (max-width: 800px) {
+        header { padding:8px; gap:6px; }
+        .controls { gap:6px; flex-wrap:wrap; }
+        main { flex-direction: column; padding:4px; gap:4px; }
+        #editor {
+          min-height: 32vh;
+          height: 32vh;
+          width: 100vw;
+          max-width: 100vw;
+          margin: 0 auto 4px auto;
+        }
+        .sidebar {
+          width: 100vw;
+          max-width: 100vw;
+          padding: 0;
+        }
+        .panel {
+          padding: 8px 4px;
+          margin: 0 0 4px 0;
+        }
+        .panel > div:first-child { display:flex; flex-direction:row; gap:4px; }
+        .panel button { flex:1; min-width: 0; }
+        #output {
+          height: 22vh;
+          min-height: 100px;
+          width: 100vw;
+          max-width: 100vw;
+          margin: 0 auto;
+        }
+        #stdin { min-width: 0; width: 100%; }
+        /* Add a small toggle button in the header for console on mobile */
+        #toggleOutput { display:inline-block; padding:8px 10px; font-size:14px; margin-left:4px; }
+      }
+
+      /* Desktop: hide mobile toggle */
+      #toggleOutput { display:none; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Abzyrx - C / C++ IDE (Wandbox-powered)</h1>
+      <button id="toggleOutput" title="Toggle console">Console</button>
+      <div class="controls">
+        <label class="small">Language</label>
+        <select id="lang">
+          <option value="c">C (C11)</option>
+          <option value="cpp" selected>C++ (C++17)</option>
+        </select>
+        <label class="small">Compiler</label>
+        <select id="compiler">
+          <option value="gcc-13.2.0">gcc-13.2.0</option>
+          <option value="clang-17.0.0">clang-17.0.0</option>
+          <option value="gcc-head">gcc-head</option>
+          <option value="clang-head">clang-head</option>
+        </select>
+      </div>
+    </header>
+
+    <main>
+      <div id="editor">// Loading editor...</div>
+      <div class="sidebar">
+        <div class="panel">
+          <div style="display:flex;gap:8px;">
+            <button id="run">Compile & Run</button>
+            <button id="compile">Compile-only</button>
+            <button id="clear">Clear Output</button>
+            <button id="download">Download</button>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <label class="small">Stdin</label>
+            <input id="stdin" placeholder="Optional program input" style="flex:1" />
+          </div>
+          <div>
+            <label class="small">Examples</label>
+            <select id="examples">
+              <option value="hello_cpp">Hello C++</option>
+              <option value="hello_c">Hello C</option>
+              <option value="fibonacci_cpp">Fibonacci (C++)</option>
+            </select>
+            <button id="loadExample">Load</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <strong class="small">Output</strong>
+          <pre id="output">Ready.
+</pre>
+        </div>
+      </div>
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.14/ace.js"></script>
+    <script>
+      const editor = ace.edit('editor');
+      editor.setTheme('ace/theme/monokai');
+      editor.session.setMode('ace/mode/c_cpp');
+      editor.setValue(`#include <bits/stdc++.h>\nusing namespace std;\nint main(){\n    cout << "Hello, World!" << endl;\n    return 0;\n}\n`);
+
+      const examples = {
+        hello_cpp: `#include <iostream>\nusing namespace std;\nint main(){ cout<<"Hello C++\n"; return 0; }\n`,
+        hello_c: `#include <stdio.h>\nint main(){ puts("Hello C\n"); return 0; }\n`,
+        fibonacci_cpp: `#include <iostream>\nusing namespace std;\nint main(){ int n=10; long long a=0,b=1; for(int i=0;i<n;i++){ cout<<a<<" "; auto t=a;b=a+b;a=t;} cout<<"\n"; }\n`
+      };
+
+      function setOutput(text){
+        const out = document.getElementById('output');
+        out.textContent = text;
+      }
+
+      document.getElementById('loadExample').addEventListener('click', ()=>{
+        const key = document.getElementById('examples').value;
+        editor.setValue(examples[key], -1);
+        // Set language/compiler for C example to avoid mismatched options
+        if(key === 'hello_c'){
+          document.getElementById('lang').value = 'c';
+          document.getElementById('compiler').value = 'gcc-13.2.0';
+        } else {
+          document.getElementById('lang').value = 'cpp';
+        }
+        setOutput('Loaded example: ' + key);
+      });
+
+      document.getElementById('clear').addEventListener('click', ()=> setOutput(''));
+
+      document.getElementById('download').addEventListener('click', ()=>{
+        const code = editor.getValue();
+        const blob = new Blob([code], {type:'text/plain'});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = (document.getElementById('lang').value === 'c') ? 'main.c' : 'main.cpp';
+        a.click();
+      });
+
+      function compilerOptionForLang(lang){
+        if(lang === 'c') return '-std=c11';
+        return '-std=c++17';
+      }
+
+      async function callWandbox(payload){
+        // Wandbox public compile API
+        const url = 'https://wandbox.org/api/compile.json';
+        const res = await fetch(url, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+        if(!res.ok) throw new Error('Network error: '+res.status);
+        return await res.json();
+      }
+
+      async function run(compileOnly=false){
+        const lang = document.getElementById('lang').value;
+        const compiler = document.getElementById('compiler').value;
+        const stdin = document.getElementById('stdin').value || '';
+        const code = editor.getValue();
+        setOutput('Compiling...');
+        try{
+          const payload = {
+            code: code,
+            compiler: compiler,
+            stdin: stdin,
+            'compiler-option-raw': compilerOptionForLang(lang),
+            'runtime-option-raw': ''
+          };
+          const json = await callWandbox(payload);
+          let out = '';
+          if(json.compiler_message) out += '--- Compiler messages ---\n' + json.compiler_message + '\n';
+          if(!compileOnly){
+            if(json.program_message) out += '--- Program output ---\n' + json.program_message + '\n';
+            if(json.signal) out += `--- Signal: ${json.signal} \n`;
+            if(json.status !== undefined) out += `--- Exit status: ${json.status} \n`;
+          }
+          if(json.url) out += '\n--- Wandbox URL ---\n' + json.url + '\n';
+          setOutput(out || 'No output.');
+        }catch(err){
+          setOutput('Error: '+err.message);
+        }
+      }
+
+      document.getElementById('run').addEventListener('click', ()=> run(false));
+      document.getElementById('compile').addEventListener('click', ()=> run(true));
+
+      // When language selector changes, ensure editor mode
+      document.getElementById('lang').addEventListener('change', (e)=>{
+        editor.session.setMode('ace/mode/c_cpp');
+      });
+
+      // Toggle mobile console visibility
+      const toggleBtn = document.getElementById('toggleOutput');
+      const outputPanel = document.getElementById('output');
+      let outputVisible = true;
+      toggleBtn && toggleBtn.addEventListener('click', ()=>{
+        // toggle a visible class by adjusting parent panel's display
+        const panel = outputPanel.parentElement;
+        if(panel.style.display === 'none'){
+          panel.style.display = '';
+          outputVisible = true;
+        } else {
+          panel.style.display = 'none';
+          outputVisible = false;
+        }
+        setTimeout(()=> editor.resize(), 200);
+      });
+
+      // On small screens, collapse console initially to give editor space
+      function adaptForSize(){
+        if(window.innerWidth <= 800){
+          const panel = outputPanel.parentElement;
+          panel.style.display = outputVisible ? '' : 'none';
+          editor.resize();
+        } else {
+          outputPanel.parentElement.style.display = '';
+          editor.resize();
+        }
+      }
+      window.addEventListener('resize', adaptForSize);
+      // run once on load
+      adaptForSize();
+
+      // Helpful note: Wandbox and CDN must be reachable (internet).
+    </script>
+  </body>
+</html>
